@@ -4,12 +4,13 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net"
 	"os"
 )
 
 var (
 	server string
-	port   int
+	port   string
 	domain string
 )
 
@@ -28,7 +29,7 @@ func main() {
 func processFlags() {
 	flag.StringVar(&server, "server", "socket",
 		"Server type (web or socket)")
-	flag.IntVar(&port, "port", 5445, "Port to access server")
+	flag.StringVar(&port, "port", "5445", "Port to access server")
 	flag.StringVar(&domain, "domain", "localhost", "Domain of a webserver")
 	flag.Parse()
 	if len(flag.Args()) > 0 {
@@ -49,10 +50,38 @@ func usage() {
 }
 
 func startSocket() {
-	fmt.Printf("Starting Socket Server on port %d\n\n", port)
+	fmt.Printf("Starting Socket Server on port %s\n\n", port)
+	sock, err := net.Listen("tcp", "localhost"+":"+port)
+	if err != nil {
+		fmt.Println("Socket server error: ", err.Error())
+		os.Exit(1)
+	}
+	defer sock.Close()
+	socketListen(sock)
 }
 
 func startWeb() {
-	fmt.Printf("Starting Web Server on port %d using domain '%s'\n\n",
+	fmt.Printf("Starting Web Server on port %s using domain '%s'\n\n",
 		port, domain)
+}
+
+func socketListen(sock net.Listener) {
+	for {
+		conn, err := sock.Accept()
+		if err != nil {
+			fmt.Println("Input error: ", err.Error())
+			os.Exit(1)
+		}
+		go handleSocket(conn)
+	}
+}
+
+func handleSocket(conn net.Conn) {
+	buf := make([]byte, 1024)
+	_, err := conn.Read(buf)
+	if err != nil {
+		fmt.Println("Error reading input: ", err.Error())
+	}
+	fmt.Println(buf)
+	conn.Write([]byte(buf))
 }
