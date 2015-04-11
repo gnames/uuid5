@@ -63,6 +63,22 @@ func startSocket() {
 func startWeb() {
 	fmt.Printf("Starting Web Server on port %s using domain '%s'\n\n",
 		port, domain)
+	http.HandleFunc("/", webHandler)
+	http.ListenAndServe(port, nil)
+}
+
+func webHandler(w http.ResponseWriter, r *http.Request) {
+	input := r.URL.Path[1:]
+	if input == "" {
+		webInstructions(w)
+	} else {
+		webRequest(w, input)
+	}
+}
+
+func webInstructions(w http.ResponseWriter) {
+	fmt.Fprintf(w, "Enter name string in url like \"http://%s/Homo%%20sapiens\"\n", domain)
+	fmt.Fprintf(w, "Or enter serversl name strings divided by pipe character like \"http://%s/Homo%%20sapiens%%7CPardosa%%20moesta%%7CParus%%20major%%20(Linnaeus,%%201758)\"\n", domain)
 }
 
 func socketListen(sock net.Listener) {
