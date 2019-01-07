@@ -4,14 +4,14 @@ package uuid5
 import (
 	"strings"
 
-	"github.com/satori/go.uuid"
+	uuid "github.com/satori/go.uuid"
 )
 
 var gnNamespace = uuid.NewV5(uuid.NamespaceDNS, "globalnames.org")
 
 // UUID5 returns UUID version 5 generated from a string
 func UUID5(input string) uuid.UUID {
-	return uuid.NewV5(gnNamespace, normalizeName(input))
+	return uuid.NewV5(gnNamespace, input)
 }
 
 // UUID5s returns array of UUIDs v5 generated from an array of strings
@@ -62,8 +62,4 @@ func splitNames(input string, delim rune) []string {
 		return ch == delim
 	}
 	return strings.FieldsFunc(input, f)
-}
-
-func normalizeName(name string) string {
-	return strings.TrimSpace(name)
 }
