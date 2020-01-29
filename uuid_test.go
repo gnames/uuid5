@@ -1,7 +1,12 @@
 package uuid5
 
 import (
+	"fmt"
+	"os"
+	"runtime/trace"
 	"testing"
+
+	uuid "github.com/satori/go.uuid"
 )
 
 func TestString(t *testing.T) {
@@ -37,4 +42,60 @@ func TestStrings(t *testing.T) {
 			t.Errorf("uuid.Strings: %s == %s, want %s for element %d\n", in[i], got[i], want[i], i)
 		}
 	}
+}
+
+// Benchmarks. To run all of them use
+// go test ./... -bench=. -benchmem -count=10 -run=XXX > bench.txt && benchstat bench.txt
+
+// BenchmarkUUIDString checks the speed of generating a string version of UUID
+func BenchmarkUUIDString(b *testing.B) {
+	traceFile := "uuid-string.trace"
+	runBenchmark("UUIDString", b, traceFile, true)
+}
+
+// BenchmarkUUIDRaw checks the speed of generating a string version of UUID
+func BenchmarkUUIDRaw(b *testing.B) {
+	traceFile := "uuid-raw.trace"
+	runBenchmark("UUIDRaw", b, traceFile, false)
+}
+
+// BenchmarkUUID checks the speed of generating a string version of UUID
+func BenchmarkUUID(b *testing.B) {
+	gnUUID := uuid.NewV5(uuid.NamespaceDNS, "globalnames.org")
+	n := "UUID"
+	var res uuid.UUID
+	b.Run(n, func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			res = uuid.NewV5(gnUUID, "Influenza A virus (A/blue-winged teal/Missouri/11OS2563/2011(H12N4))")
+			_ = res.String
+		}
+		_ = fmt.Sprintf("%d", len(res))
+	})
+}
+
+func runBenchmark(n string, b *testing.B, traceFile string,
+	withString bool) {
+	f, err := os.Create(traceFile)
+	if err != nil {
+		panic(err)
+	}
+	err = trace.Start(f)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	defer b.StopTimer()
+	defer trace.Stop()
+
+	var res uuid.UUID
+	b.Run(n, func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			res = UUID5("Influenza A virus (A/blue-winged teal/Missouri/11OS2563/2011(H12N4))")
+			if withString {
+				_ = res.String
+			}
+		}
+
+		_ = fmt.Sprintf("%d", len(res))
+	})
 }
